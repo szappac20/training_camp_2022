@@ -14,7 +14,7 @@ def test_energy_bill_instance():
     with open(json_path, "rb") as fp:
         energy_bill_dict = json.loads(fp.read())
 
-    pprint.pprint(energy_bill_dict)
+    # pprint.pprint(energy_bill_dict)
     # pprint.pprint(energy_bill_dict["customData"])
 
     test_energy_bill = \

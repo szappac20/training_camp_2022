@@ -179,10 +179,12 @@ def create_fake_consumption_f1_f2_f3(
     mu = np.array([mean_f1, mean_f2, mean_f3]).clip(min=0.1)
 
     # Standard deviation is proportional to upper_bound
-    sigma = np.diag(
-        8. * np.multiply(np.random.normal(
-            loc=upper_bound.iloc[0], scale=0.05*upper_bound.iloc[0], size=3),
-        min(abs(mu))/mu))
+    sigma = 8. * np.diag(
+        np.multiply(
+            np.random.normal(
+                loc=upper_bound.iloc[0],
+                scale=0.05*upper_bound.iloc[0], size=3),
+            min(abs(mu))/mu))
 
     var_init["f1"] = var_init["f1"] * sigma[0][0] + mean_f1
     var_init["f2"] = var_init["f2"] * sigma[1][1] + mean_f2
@@ -336,7 +338,6 @@ class EnergyBillGenerator(object):
             consumptions["upper_bound"] = random.choices(
                 [1.5, 3., 4.5, 6., 7], weights=(10, 80, 5, 4, 1))[0]
 
-
             consumptions[["f1", "f2", "f3"]] = create_fake_consumption_f1_f2_f3(
                     history_length=history_months,
                     upper_bound=consumptions["upper_bound"],
@@ -391,14 +392,15 @@ class EnergyBillGenerator(object):
                 future_best_offer.apply(
                     self.offer_fitting, axis=1, result_type="expand")
 
-            # Randomly delete a variable number of months in the past
-            drop_mask = np.ones(12 * past_years)
-            while sum(drop_mask) == (12 * past_years):
-                drop_mask = scipy.stats.bernoulli.rvs(
-                    p=(1-self.keep_prob), size=12 * past_years)
+            if self.keep_prob < 1.:
+                # Randomly delete a variable number of months in the past
+                drop_mask = np.ones(12 * past_years)
+                while sum(drop_mask) == (12 * past_years):
+                    drop_mask = scipy.stats.bernoulli.rvs(
+                        p=(1-self.keep_prob), size=12 * past_years)
 
-            drop_mask = np.arange(12 * past_years)[drop_mask.astype(bool)]
-            past_consumptions = past_consumptions.drop(drop_mask)
+                drop_mask = np.arange(12 * past_years)[drop_mask.astype(bool)]
+                past_consumptions = past_consumptions.drop(drop_mask)
 
             past_features_dataset = pd.concat(
                 [past_features_dataset, past_consumptions], ignore_index=True)
@@ -511,13 +513,13 @@ class EnergyBillJsonGenerator(object):
 
         bills.append(bill_dict)
 
-        pprint.pprint(bill_dict, sort_dicts=False)
+#        pprint.pprint(bill_dict, sort_dicts=False)
 
         return bills
 
     def generate_item(
-            self, item_id, birth_index, residence_index, gender,
-            name, surname, birthdate, fiscal_id):
+            self, item_id, birth_index, residence_index, domicilio_index,
+            gender, name, surname, birthdate, fiscal_id):
         item_dict = {
             item_id: {
                 "addresses": {},
@@ -569,7 +571,7 @@ class EnergyBillJsonGenerator(object):
                         "areaCode": random.choice(
                             ["347", "346", "340", "328", "320", "338", "335"]),
                         "number": ''.join(
-                            random.choice(string.digits) for i in range(7)),
+                            random.choice(string.digits) for _ in range(7)),
                         "customData": {
                           "dataModified": True,
                           "asyncCertification": True
@@ -607,8 +609,54 @@ class EnergyBillJsonGenerator(object):
 
         return item_dict
 
+    def generate_addresses(
+            self, residence_index, domicilio_index=None):
+        residence_city_row = self.italian_tows_pd.loc[residence_index]
+
+        addresses_res = {}
+        addresses_res["attributes"] = []
+        addresses_res["certificationDate"] = "2022-01-27T17:30:18Z"
+        addresses_res["city"] = {
+            "code": residence_city_row["Codice Catastale del comune"],
+            "value": residence_city_row["Denominazione in italiano"]}
+        addresses_res["country"] = {
+            "code": "IT",
+            "value": "ITALIA"}
+        addresses_res["province"] = {
+            "code": residence_city_row["Sigla automobilistica"],
+            "value": residence_city_row[
+                "Denominazione dell'Unità territoriale " +
+                "sovracomunale\n(valida a fini statistici)"]}
+        addresses_res["type"] = {"code": "2", "value": "RESIDENZA"}
+        addresses_res["zipCode"] = {
+            "code": residence_city_row["CAP_INIT"],
+            "value": residence_city_row["CAP_INIT"]
+        },
+        addresses_list = [addresses_res]
+
+        if domicilio_index is not None:
+            domicilio_city_row = self.italian_tows_pd.loc[domicilio_index]
+            addresses_dom = {}
+            addresses_dom["attributes"] = []
+            addresses_dom["certificationDate"] = "2022-01-27T17:30:18Z"
+            addresses_dom["city"] = {
+                "code": domicilio_city_row["Codice Catastale del comune"],
+                "value": domicilio_city_row["Denominazione in italiano"]}
+            addresses_dom["country"] = {
+                "code": "IT",
+                "value": "ITALIA"}
+            addresses_dom["province"] = {
+                "code": domicilio_city_row["Sigla automobilistica"],
+                "value": domicilio_city_row[
+                    "Denominazione dell'Unità territoriale " +
+                    "sovracomunale\n(valida a fini statistici)"]}
+            addresses_dom["type"] = {"code": "6", "value": "DOMICILIO"}
+            addresses_list.append(addresses_dom)
+
+        return addresses_list
+
     def generate_personal_info(
-            self, birth_index, residence_index, gender,
+            self, birth_index, gender,
             firstname, lastname, birthdate):
         """
         Generate the key personalInfo
@@ -634,7 +682,7 @@ class EnergyBillJsonGenerator(object):
                 "code": birth_row["Sigla automobilistica"],
                 "value": birth_row[
                     "Denominazione dell'Unità territoriale " +
-                    "sovracomunale \n(valida a fini statistici)"]
+                    "sovracomunale\n(valida a fini statistici)"]
             },
             "citizenshipNoUSA": False,
             "citizenships": [

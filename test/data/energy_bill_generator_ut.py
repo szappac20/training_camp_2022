@@ -2,6 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 import training_camp_2022.data.energy_bill_generator
+import training_camp_2022.data.commercial_offer
+import training_camp_2022.data.energy_bill_generator
 
 
 def test_history_consumptions():
@@ -16,9 +18,9 @@ def test_history_consumptions():
 
     num_users = 2
     commercial_offers = [mono_oraria, serale, notturna]
-    features_1_df, features_2_df, labels_1_df, labels_2_df = \
-        training_camp_2022.data.energy_bill_generator.bill_generator.run(
-    num_users=num_users)
+    # features_1_df, features_2_df, labels_1_df, labels_2_df = \
+    #     training_camp_2022.data.energy_bill_generator.bill_generator.run(
+    # num_users=num_users)
 
     bill_generator = \
         training_camp_2022.data.energy_bill_generator.EnergyBillGenerator(

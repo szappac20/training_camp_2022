@@ -1,6 +1,7 @@
 import os
 import json
 import pandas as pd
+import pprint
 
 import training_camp_2022.config
 import training_camp_2022.data.energy_bill_generator
@@ -54,7 +55,6 @@ def test_dataset_generation_shapes():
     test_users_2 = set(test_features_2["user"])
     err_msg = "Users in test set for task 1 and task 2 are different"
     assert test_users_1 == test_users_2, err_msg
-
 
     training_features_1 = training_features_1.drop(
         ["city_elevation", "is_resident", "upper_bound"], axis=1)
@@ -143,9 +143,12 @@ def test_json_structure():
     with open(energy_bill_path, "rb") as fp:
         energy_bill_dict = json.loads(fp.read())
 
-    json_compare(energy_bill_dict, fake_energy_bills[0])
+    pprint.pprint(energy_bill_dict)
+    pprint.pprint(fake_energy_bills[0])
+
+    # json_compare(energy_bill_dict, fake_energy_bills[0])
 
 
 if __name__ == "__main__":
-    test_dataset_generation_shapes()
-    # test_json_structure()
+    # test_dataset_generation_shapes()
+    test_json_structure()

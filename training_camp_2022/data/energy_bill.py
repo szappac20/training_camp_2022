@@ -35,15 +35,19 @@ class EnergyBill(object):
 
         """
         fiscal_id = src_dict["fiscalID"]
-        customer_id = src_dict["bamData"]["items"].keys()[0]
+        energy_bill_id = src_dict["instanceID"]
+        customer_id = list(src_dict["bamData"]["items"].keys())[0]
         customer_dict = src_dict["bamData"]["items"][customer_id]
 
-        energy_customer = training_camp_2022.data.energy_customer.EnergyCustomer(
-            fiscal_id=fiscal_id, customer_dict=customer_dict)
+        energy_customer = \
+            training_camp_2022.data.energy_customer.EnergyCustomer(
+                fiscal_id=fiscal_id, customer_dict=customer_dict)
 
         energy_data = src_dict["customData"]
 
-        return EnergyBill(energy_customer, energy_data)
+        return EnergyBill(
+            customer=energy_customer,
+            energy_bill_id=energy_bill_id, energy_data=energy_data)
 
     def to_dict(self):
         pass
